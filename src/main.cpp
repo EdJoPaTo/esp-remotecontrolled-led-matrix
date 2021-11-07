@@ -1,9 +1,16 @@
 #include <ArduinoOTA.h>
 #include <credentials.h>
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 #include <EspMQTTClient.h>
 #include <LinkedList.h>
 #include <MqttKalmanPublish.h>
+
+#ifdef I2SMATRIX
+#include "matrix-i2s.h"
+#elif NEOMATRIX
+#include "matrix-neomatrix.h"
+#else
+#include "matrix-testing.h"
+#endif
 
 #define CLIENT_NAME "espPixelmatrix"
 const uint16_t LISTEN_PORT = 1337;
@@ -24,17 +31,13 @@ const bool MQTT_RETAINED = true;
 #define BASIC_TOPIC_SET BASIC_TOPIC "set/"
 #define BASIC_TOPIC_STATUS BASIC_TOPIC "status/"
 
-// Configure for your panel(s) as appropriate!
-const uint16_t PANEL_WIDTH = 64;
-const uint16_t PANEL_HEIGHT = 64;
-const uint16_t PANELS_NUMBER = 1;
-const int8_t PIN_E = 18;
-
-const uint16_t PANE_WIDTH = PANEL_WIDTH * PANELS_NUMBER;
-const uint16_t PANE_HEIGHT = PANEL_HEIGHT;
-
-// placeholder for the matrix object
-MatrixPanel_I2S_DMA *dma_display = nullptr;
+#ifdef ESP8266
+  #define LED_BUILTIN_ON LOW
+  #define LED_BUILTIN_OFF HIGH
+#else // for ESP32
+  #define LED_BUILTIN_ON HIGH
+  #define LED_BUILTIN_OFF LOW
+#endif
 
 WiFiServer server(LISTEN_PORT);
 LinkedList<WiFiClient> clients;
@@ -53,18 +56,9 @@ int lastPublishedClientAmount = 0;
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
+  Serial.println();
 
-  HUB75_I2S_CFG mxconfig;
-  mxconfig.mx_height = PANEL_HEIGHT;
-  mxconfig.chain_length = PANELS_NUMBER;
-  mxconfig.gpio.e = PIN_E;
-  dma_display = new MatrixPanel_I2S_DMA(mxconfig);
-  dma_display->setBrightness8((mqttBri << 3)); // 0-7, 8-15, ... seem to be equal anyway
-
-  // Allocate memory and start DMA display
-  if (not dma_display->begin()) {
-    Serial.println("****** !KABOOM! I2S memory allocation failed ***********");
-  }
+  matrix_setup(mqttBri << BRIGHTNESS_SCALE);
 
   ArduinoOTA.setHostname(CLIENT_NAME);
 
@@ -76,19 +70,19 @@ void setup() {
 
   // well, hope we are OK, let's draw some colors first :)
   Serial.println("Fill screen: RED");
-  dma_display->fillScreenRGB888(255, 0, 0);
+  matrix_fill(255, 0, 0);
   delay(200);
 
   Serial.println("Fill screen: GREEN");
-  dma_display->fillScreenRGB888(0, 255, 0);
+  matrix_fill(0, 255, 0);
   delay(200);
 
   Serial.println("Fill screen: BLUE");
-  dma_display->fillScreenRGB888(0, 0, 255);
+  matrix_fill(0, 0, 255);
   delay(200);
 
   Serial.println("Fill screen: BLACK");
-  dma_display->fillScreenRGB888(0, 0, 0);
+  matrix_fill(0, 0, 0);
   delay(200);
 
   Serial.println("Setup done...");
@@ -97,15 +91,15 @@ void setup() {
 void onConnectionEstablished() {
   client.subscribe(BASIC_TOPIC_SET "bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
-    mqttBri = max(1, min(31, value));
-    dma_display->setBrightness8((mqttBri << 3) * on);
+    mqttBri = max(1, min(255 >> BRIGHTNESS_SCALE, value));
+    matrix_brightness((mqttBri << BRIGHTNESS_SCALE) * on);
     client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "on", [](const String &payload) {
     boolean value = payload != "0";
     on = value;
-    dma_display->setBrightness8((mqttBri << 3) * on);
+    matrix_brightness((mqttBri << BRIGHTNESS_SCALE) * on);
     client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
   });
 
@@ -140,8 +134,8 @@ void pixelclientUpdateClients() {
   while (server.hasClient()) {
     auto client = server.available();
     client.setNoDelay(true);
-    client.write(PANE_WIDTH);
-    client.write(PANE_HEIGHT);
+    client.write(TOTAL_WIDTH);
+    client.write(TOTAL_HEIGHT);
     client.flush();
 
 #ifdef PRINT_TO_SERIAL
@@ -166,7 +160,7 @@ void pixelclientLoop() {
         uint8_t blue = client.read();
         commands += 1;
         bytes += 4;
-        dma_display->fillScreenRGB888(red, green, blue);
+        matrix_fill(red, green, blue);
       } else if (kind == 2) { // Pixel
         uint8_t x = client.read();
         uint8_t y = client.read();
@@ -175,7 +169,7 @@ void pixelclientLoop() {
         uint8_t blue = client.read();
         commands += 1;
         bytes += 6;
-        dma_display->drawPixelRGB888(x, y, red, green, blue);
+        matrix_pixel(x, y, red, green, blue);
       }
     }
   }
@@ -186,7 +180,7 @@ unsigned long nextMeasure = 0;
 
 void loop() {
   client.loop();
-  digitalWrite(LED_BUILTIN, client.isConnected() ? LOW : HIGH);
+  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_OFF);
   ArduinoOTA.handle();
   pixelclientUpdateClients();
 
