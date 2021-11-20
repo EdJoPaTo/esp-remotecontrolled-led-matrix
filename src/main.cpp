@@ -14,6 +14,7 @@
 
 #define CLIENT_NAME "espPixelmatrix"
 const uint16_t LISTEN_PORT = 1337;
+const bool MQTT_RETAINED = false;
 
 EspMQTTClient client(
   WIFI_SSID,
@@ -22,8 +23,6 @@ EspMQTTClient client(
   CLIENT_NAME, // Client name that uniquely identify your device
   1883 // The MQTT port, default to 1883. this line can be omitted
 );
-
-const bool MQTT_RETAINED = true;
 
 // #define PRINT_TO_SERIAL
 
@@ -72,22 +71,22 @@ void setup() {
   Serial.println("Fill screen: RED");
   matrix_fill(255, 0, 0);
   matrix_update();
-  delay(200);
+  delay(250);
 
   Serial.println("Fill screen: GREEN");
   matrix_fill(0, 255, 0);
   matrix_update();
-  delay(200);
+  delay(250);
 
   Serial.println("Fill screen: BLUE");
   matrix_fill(0, 0, 255);
   matrix_update();
-  delay(200);
+  delay(250);
 
   Serial.println("Fill screen: BLACK");
   matrix_fill(0, 0, 0);
   matrix_update();
-  delay(200);
+  delay(250);
 
   Serial.println("Setup done...");
 }
