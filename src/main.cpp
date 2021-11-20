@@ -231,6 +231,21 @@ void loop() {
           commands += 1;
           bytes += 6;
           matrix_pixel(x, y, red, green, blue);
+        } else if (kind == 3) { // Rectangle
+          uint8_t x_start = client.read();
+          uint8_t y_start = client.read();
+          uint8_t width = client.read();
+          uint8_t height = client.read();
+          uint8_t red = client.read();
+          uint8_t green = client.read();
+          uint8_t blue = client.read();
+          commands += 1;
+          bytes += 8;
+          for (auto x = x_start; x < x_start + width; x++) {
+            for (auto y = y_start; y < y_start + height; y++) {
+              matrix_pixel(x, y, red, green, blue);
+            }
+          }
         }
       }
     }
