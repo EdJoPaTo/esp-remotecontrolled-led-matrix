@@ -1,4 +1,3 @@
-#include <ArduinoOTA.h>
 #include <credentials.h>
 #include <EspMQTTClient.h>
 #include <MqttKalmanPublish.h>
@@ -59,12 +58,11 @@ void setup() {
 
   matrix_setup(mqttBri << BRIGHTNESS_SCALE);
 
-  ArduinoOTA.setHostname(CLIENT_NAME);
-
 #ifdef PRINT_TO_SERIAL
   client.enableDebuggingMessages();
 #endif
   client.enableHTTPWebUpdater();
+  client.enableOTA();
   client.enableLastWillMessage(BASIC_TOPIC "connected", "0", MQTT_RETAINED);
 
   // well, hope we are OK, let's draw some colors first :)
@@ -109,8 +107,6 @@ void onConnectionEstablished() {
   client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
   client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
-
-  ArduinoOTA.begin();
 
   server.begin();
   server.setNoDelay(true);
@@ -158,7 +154,6 @@ unsigned long nextMeasure = 0;
 void loop() {
   client.loop();
   digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
-  ArduinoOTA.handle();
   pixelclientUpdateClients();
 
   auto now = millis();
