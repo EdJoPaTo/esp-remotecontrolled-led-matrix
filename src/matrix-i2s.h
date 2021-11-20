@@ -36,6 +36,8 @@ void matrix_brightness(uint8_t brightness)
     dma_display->setBrightness8(brightness);
 }
 
+void matrix_update() {}
+
 void matrix_fill(uint8_t red, uint8_t green, uint8_t blue)
 {
     dma_display->fillScreenRGB888(red, green, blue);

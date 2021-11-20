@@ -27,7 +27,6 @@ const int PIN_MATRIX = 13; // D7
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 
-
 // Example for NeoPixel Shield.  In this application we'd like to use it
 // as a 5x8 tall matrix, with the USB port positioned at the top of the
 // Arduino.  When held that way, the first pixel is at the top right, and
@@ -49,14 +48,17 @@ void matrix_brightness(uint8_t brightness)
     matrix.setBrightness(brightness);
 }
 
+void matrix_update()
+{
+    matrix.show();
+}
+
 void matrix_fill(uint8_t red, uint8_t green, uint8_t blue)
 {
     matrix.fillScreen(matrix.Color(red, green, blue));
-    matrix.show();
 }
 
 void matrix_pixel(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue)
 {
     matrix.drawPixel(x, y, matrix.Color(red, green, blue));
-    matrix.show();
 }

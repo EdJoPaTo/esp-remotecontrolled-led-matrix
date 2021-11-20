@@ -71,18 +71,22 @@ void setup() {
   // well, hope we are OK, let's draw some colors first :)
   Serial.println("Fill screen: RED");
   matrix_fill(255, 0, 0);
+  matrix_update();
   delay(200);
 
   Serial.println("Fill screen: GREEN");
   matrix_fill(0, 255, 0);
+  matrix_update();
   delay(200);
 
   Serial.println("Fill screen: BLUE");
   matrix_fill(0, 0, 255);
+  matrix_update();
   delay(200);
 
   Serial.println("Fill screen: BLACK");
   matrix_fill(0, 0, 0);
+  matrix_update();
   delay(200);
 
   Serial.println("Setup done...");
@@ -172,6 +176,8 @@ void pixelclientLoop() {
       }
     }
   }
+
+  matrix_update();
 }
 
 unsigned long nextCommandsUpdate = 0;
