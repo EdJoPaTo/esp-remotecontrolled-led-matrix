@@ -24,6 +24,11 @@ fn fill(red: u8, green: u8, blue: u8) {
 fn pixel(x: u8, y: u8, red: u8, green: u8, blue: u8) {
     client.send([2, x, y, red, green, blue]);
 }
+
+/// Set rectangular area to the given color
+fn pixel(x: u8, y: u8, width: u8, height: u8, red: u8, green: u8, blue: u8) {
+    client.send([3, x, y, width, height, red, green, blue]);
+}
 ```
 
 There is a [Rust client library](https://github.com/EdJoPaTo/esp-wlan-led-matrix-rust-client) available.
