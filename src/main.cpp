@@ -1,8 +1,8 @@
 #include <ArduinoOTA.h>
 #include <credentials.h>
 #include <EspMQTTClient.h>
-#include <LinkedList.h>
 #include <MqttKalmanPublish.h>
+#include <vector>
 
 #ifdef I2SMATRIX
 #include "matrix-i2s.h"
@@ -40,7 +40,7 @@ const bool MQTT_RETAINED = true;
 #endif
 
 WiFiServer server(LISTEN_PORT);
-LinkedList<WiFiClient> clients;
+std::vector<WiFiClient> clients;
 
 MQTTKalmanPublish mkCommandsPerSecond(client, BASIC_TOPIC_STATUS "commands-per-second", false, 12 * 1 /* every 1 min */, 10);
 MQTTKalmanPublish mkKilobytesPerSecond(client, BASIC_TOPIC_STATUS "kilobytes-per-second", false, 12 * 1 /* every 1 min */, 10);
@@ -51,7 +51,7 @@ uint8_t mqttBri = 2;
 
 uint32_t commands = 0;
 uint32_t bytes = 0;
-int lastPublishedClientAmount = 0;
+size_t lastPublishedClientAmount = 0;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -119,10 +119,10 @@ void onConnectionEstablished() {
 
 void pixelclientUpdateClients() {
   for (auto i = clients.size(); i > 0; i--) {
-    auto client = clients.get(i - 1);
+    auto client = clients[i - 1];
 
     if (!client.connected()) {
-      clients.remove(i - 1);
+      clients.erase(clients.begin() + i - 1);
 
 #ifdef PRINT_TO_SERIAL
       Serial.print("Client left. Remaining: ");
@@ -145,13 +145,12 @@ void pixelclientUpdateClients() {
     Serial.println(client.remotePort());
 #endif
 
-    clients.add(client);
+    clients.push_back(client);
   }
 }
 
 void pixelclientLoop() {
-  for (auto i = 0; i < clients.size(); i++) {
-    auto client = clients.get(i);
+  for (auto client : clients) {
     if (client.available()) {
       uint8_t kind = client.read();
       if (kind == 1) { // Fill
