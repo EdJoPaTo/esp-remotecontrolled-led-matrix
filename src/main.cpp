@@ -153,33 +153,6 @@ void pixelclientUpdateClients() {
   }
 }
 
-void pixelclientLoop() {
-  for (auto client : clients) {
-    if (client.available()) {
-      uint8_t kind = client.read();
-      if (kind == 1) { // Fill
-        uint8_t red = client.read();
-        uint8_t green = client.read();
-        uint8_t blue = client.read();
-        commands += 1;
-        bytes += 4;
-        matrix_fill(red, green, blue);
-      } else if (kind == 2) { // Pixel
-        uint8_t x = client.read();
-        uint8_t y = client.read();
-        uint8_t red = client.read();
-        uint8_t green = client.read();
-        uint8_t blue = client.read();
-        commands += 1;
-        bytes += 6;
-        matrix_pixel(x, y, red, green, blue);
-      }
-    }
-  }
-
-  matrix_update();
-}
-
 unsigned long nextCommandsUpdate = 0;
 unsigned long nextMeasure = 0;
 
@@ -197,7 +170,7 @@ void loop() {
       client.publish(BASIC_TOPIC_STATUS "clients", String(lastPublishedClientAmount), MQTT_RETAINED);
     }
 
-    if (now > nextCommandsUpdate) {
+    if (now >= nextCommandsUpdate) {
       nextCommandsUpdate = now + 5000;
       auto commands_per_second = commands / 5.0f;
       commands = 0;
@@ -220,7 +193,7 @@ void loop() {
 #endif
     }
 
-    if (now > nextMeasure) {
+    if (now >= nextMeasure) {
       nextMeasure = now + 5000;
       long rssi = WiFi.RSSI();
       float avgRssi = mkRssi.addMeasurement(rssi);
@@ -233,9 +206,35 @@ void loop() {
     }
   }
 
-  auto nextMqtt = now + 450;
-  auto nextUpdate = min(min(nextMeasure, nextCommandsUpdate), nextMqtt);
-  while (millis() < nextUpdate) {
-    pixelclientLoop();
+  // 50 ms -> 20 FPS
+  // 25 ms -> 40 FPS
+  // 20 ms -> 50 FPS
+  // 16 ms -> 62.2 FPS
+  auto until = millis() + 25;
+  while (millis() < until) {
+    for (auto client : clients) {
+      if (client.available()) {
+        uint8_t kind = client.read();
+        if (kind == 1) { // Fill
+          uint8_t red = client.read();
+          uint8_t green = client.read();
+          uint8_t blue = client.read();
+          commands += 1;
+          bytes += 4;
+          matrix_fill(red, green, blue);
+        } else if (kind == 2) { // Pixel
+          uint8_t x = client.read();
+          uint8_t y = client.read();
+          uint8_t red = client.read();
+          uint8_t green = client.read();
+          uint8_t blue = client.read();
+          commands += 1;
+          bytes += 6;
+          matrix_pixel(x, y, red, green, blue);
+        }
+      }
+    }
   }
+
+  matrix_update();
 }
