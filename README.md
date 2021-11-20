@@ -1,6 +1,6 @@
-# ESP WLAN I2S LED Matrix
+# ESP Remotecontrolled LED Matrix
 
-Tested with [this I2S Shield](https://github.com/witnessmenow/ESP32-i2s-Matrix-Shield).
+Tested with a Neopixel LED Matrix on ESP8266 and [this ESP32 I2S Shield](https://github.com/witnessmenow/ESP32-i2s-Matrix-Shield).
 
 ## Protocol
 
