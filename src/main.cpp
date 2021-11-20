@@ -158,7 +158,7 @@ unsigned long nextMeasure = 0;
 
 void loop() {
   client.loop();
-  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_OFF);
+  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
   ArduinoOTA.handle();
   pixelclientUpdateClients();
 
