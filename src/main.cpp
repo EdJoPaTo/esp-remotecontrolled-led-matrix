@@ -16,11 +16,13 @@ const uint16_t LISTEN_PORT = 1337;
 const bool MQTT_RETAINED = false;
 
 EspMQTTClient client(
-  WIFI_SSID,
-  WIFI_PASSWORD,
-  MQTT_SERVER, // MQTT Broker server ip
-  CLIENT_NAME, // Client name that uniquely identify your device
-  1883 // The MQTT port, default to 1883. this line can be omitted
+    WIFI_SSID,
+    WIFI_PASSWORD,
+    MQTT_SERVER,
+    MQTT_USERNAME,
+    MQTT_PASSWORD,
+    CLIENT_NAME, // Client name that uniquely identify your device
+    1883         // The MQTT port, default to 1883. this line can be omitted
 );
 
 // #define PRINT_TO_SERIAL
@@ -51,7 +53,8 @@ uint32_t commands = 0;
 uint32_t bytes = 0;
 size_t lastPublishedClientAmount = 0;
 
-void setup() {
+void setup()
+{
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   Serial.println();
@@ -89,7 +92,8 @@ void setup() {
   Serial.println("Setup done...");
 }
 
-void onConnectionEstablished() {
+void onConnectionEstablished()
+{
   client.subscribe(BASIC_TOPIC_SET "bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     mqttBri = max(1, min(255 >> BRIGHTNESS_SCALE, value));
@@ -116,11 +120,14 @@ void onConnectionEstablished() {
   Serial.println(LISTEN_PORT);
 }
 
-void pixelclientUpdateClients() {
-  for (auto i = clients.size(); i > 0; i--) {
+void pixelclientUpdateClients()
+{
+  for (auto i = clients.size(); i > 0; i--)
+  {
     auto client = clients[i - 1];
 
-    if (!client.connected()) {
+    if (!client.connected())
+    {
       clients.erase(clients.begin() + i - 1);
 
 #ifdef PRINT_TO_SERIAL
@@ -130,7 +137,8 @@ void pixelclientUpdateClients() {
     }
   }
 
-  while (server.hasClient()) {
+  while (server.hasClient())
+  {
     auto client = server.available();
     client.setNoDelay(true);
     client.write(TOTAL_WIDTH);
@@ -151,20 +159,24 @@ void pixelclientUpdateClients() {
 unsigned long nextCommandsUpdate = 0;
 unsigned long nextMeasure = 0;
 
-void loop() {
+void loop()
+{
   client.loop();
   digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
   pixelclientUpdateClients();
 
   auto now = millis();
 
-  if (client.isConnected()) {
-    if (lastPublishedClientAmount != clients.size()) {
+  if (client.isConnected())
+  {
+    if (lastPublishedClientAmount != clients.size())
+    {
       lastPublishedClientAmount = clients.size();
       client.publish(BASIC_TOPIC_STATUS "clients", String(lastPublishedClientAmount), MQTT_RETAINED);
     }
 
-    if (now >= nextCommandsUpdate) {
+    if (now >= nextCommandsUpdate)
+    {
       nextCommandsUpdate = now + 5000;
       auto commands_per_second = commands / 5.0f;
       commands = 0;
@@ -187,7 +199,8 @@ void loop() {
 #endif
     }
 
-    if (now >= nextMeasure) {
+    if (now >= nextMeasure)
+    {
       nextMeasure = now + 5000;
       long rssi = WiFi.RSSI();
       float avgRssi = mkRssi.addMeasurement(rssi);
@@ -205,18 +218,24 @@ void loop() {
   // 20 ms -> 50 FPS
   // 16 ms -> 62.2 FPS
   auto until = millis() + 25;
-  while (millis() < until) {
-    for (auto client : clients) {
-      if (client.available()) {
+  while (millis() < until)
+  {
+    for (auto client : clients)
+    {
+      if (client.available())
+      {
         uint8_t kind = client.read();
-        if (kind == 1) { // Fill
+        if (kind == 1) // Fill
+        {
           uint8_t red = client.read();
           uint8_t green = client.read();
           uint8_t blue = client.read();
           commands += 1;
           bytes += 4;
           matrix_fill(red, green, blue);
-        } else if (kind == 2) { // Pixel
+        }
+        else if (kind == 2) // Pixel
+        {
           uint8_t x = client.read();
           uint8_t y = client.read();
           uint8_t red = client.read();
@@ -225,7 +244,9 @@ void loop() {
           commands += 1;
           bytes += 6;
           matrix_pixel(x, y, red, green, blue);
-        } else if (kind == 3) { // Rectangle
+        }
+        else if (kind == 3) // Rectangle
+        {
           uint8_t x_start = client.read();
           uint8_t y_start = client.read();
           uint8_t width = client.read();
@@ -235,8 +256,10 @@ void loop() {
           uint8_t blue = client.read();
           commands += 1;
           bytes += 8;
-          for (auto x = x_start; x < x_start + width; x++) {
-            for (auto y = y_start; y < y_start + height; y++) {
+          for (auto x = x_start; x < x_start + width; x++)
+          {
+            for (auto y = y_start; y < y_start + height; y++)
+            {
               matrix_pixel(x, y, red, green, blue);
             }
           }
