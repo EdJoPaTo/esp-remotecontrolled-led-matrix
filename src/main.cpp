@@ -27,9 +27,9 @@ EspMQTTClient client(
 
 // #define PRINT_TO_SERIAL
 
-#define BASIC_TOPIC CLIENT_NAME "/"
-#define BASIC_TOPIC_SET BASIC_TOPIC "set/"
-#define BASIC_TOPIC_STATUS BASIC_TOPIC "status/"
+#define BASE_TOPIC CLIENT_NAME "/"
+#define BASE_TOPIC_SET BASE_TOPIC "set/"
+#define BASE_TOPIC_STATUS BASE_TOPIC "status/"
 
 #ifdef ESP8266
   #define LED_BUILTIN_ON LOW
@@ -42,9 +42,9 @@ EspMQTTClient client(
 WiFiServer server(LISTEN_PORT);
 std::vector<WiFiClient> clients;
 
-MQTTKalmanPublish mkCommandsPerSecond(client, BASIC_TOPIC_STATUS "commands-per-second", false, 12 * 1 /* every 1 min */, 10);
-MQTTKalmanPublish mkKilobytesPerSecond(client, BASIC_TOPIC_STATUS "kilobytes-per-second", false, 12 * 1 /* every 1 min */, 10);
-MQTTKalmanPublish mkRssi(client, BASIC_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
+MQTTKalmanPublish mkCommandsPerSecond(client, BASE_TOPIC_STATUS "commands-per-second", false, 12 * 1 /* every 1 min */, 10);
+MQTTKalmanPublish mkKilobytesPerSecond(client, BASE_TOPIC_STATUS "kilobytes-per-second", false, 12 * 1 /* every 1 min */, 10);
+MQTTKalmanPublish mkRssi(client, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
 
 boolean on = true;
 uint8_t mqttBri = 2;
@@ -66,7 +66,7 @@ void setup()
 #endif
   client.enableHTTPWebUpdater();
   client.enableOTA();
-  client.enableLastWillMessage(BASIC_TOPIC "connected", "0", MQTT_RETAINED);
+  client.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 
   // well, hope we are OK, let's draw some colors first :)
   Serial.println("Fill screen: RED");
@@ -94,18 +94,18 @@ void setup()
 
 void onConnectionEstablished()
 {
-  client.subscribe(BASIC_TOPIC_SET "bri", [](const String &payload) {
+  client.subscribe(BASE_TOPIC_SET "bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     mqttBri = max(1, min(255 >> BRIGHTNESS_SCALE, value));
     matrix_brightness((mqttBri << BRIGHTNESS_SCALE) * on);
-    client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "on", [](const String &payload) {
+  client.subscribe(BASE_TOPIC_SET "on", [](const String &payload) {
     boolean value = payload != "0";
     on = value;
     matrix_brightness((mqttBri << BRIGHTNESS_SCALE) * on);
-    client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
+    client.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
   });
 
   server.begin();
@@ -115,10 +115,10 @@ void onConnectionEstablished()
   Serial.print(":");
   Serial.println(LISTEN_PORT);
 
-  client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
-  client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
-  client.publish(BASIC_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
-  client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
+  client.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
+  client.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
+  client.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
+  client.publish(BASE_TOPIC "connected", "2", MQTT_RETAINED);
 }
 
 void pixelclientUpdateClients()
@@ -173,7 +173,7 @@ void loop()
     if (lastPublishedClientAmount != clients.size())
     {
       lastPublishedClientAmount = clients.size();
-      client.publish(BASIC_TOPIC_STATUS "clients", String(lastPublishedClientAmount), MQTT_RETAINED);
+      client.publish(BASE_TOPIC_STATUS "clients", String(lastPublishedClientAmount), MQTT_RETAINED);
     }
 
     if (now >= nextCommandsUpdate)
