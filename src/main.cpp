@@ -53,6 +53,23 @@ uint32_t commands = 0;
 uint32_t bytes = 0;
 size_t lastPublishedClientAmount = 0;
 
+void testMatrix() {
+  Serial.println("Fill screen: RED");
+  matrix_fill(255, 0, 0);
+  matrix_update();
+  delay(250);
+
+  Serial.println("Fill screen: GREEN");
+  matrix_fill(0, 255, 0);
+  matrix_update();
+  delay(250);
+
+  Serial.println("Fill screen: BLUE");
+  matrix_fill(0, 0, 255);
+  matrix_update();
+  delay(250);
+}
+
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -69,25 +86,10 @@ void setup()
   client.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 
   // well, hope we are OK, let's draw some colors first :)
-  Serial.println("Fill screen: RED");
-  matrix_fill(255, 0, 0);
-  matrix_update();
-  delay(250);
+  testMatrix();
 
-  Serial.println("Fill screen: GREEN");
-  matrix_fill(0, 255, 0);
-  matrix_update();
-  delay(250);
-
-  Serial.println("Fill screen: BLUE");
-  matrix_fill(0, 0, 255);
-  matrix_update();
-  delay(250);
-
-  Serial.println("Fill screen: BLACK");
   matrix_fill(0, 0, 0);
   matrix_update();
-  delay(250);
 
   Serial.println("Setup done...");
 }
