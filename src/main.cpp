@@ -117,6 +117,7 @@ void onConnectionEstablished()
 
   client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
+  client.publish(BASIC_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
   client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
 }
 
