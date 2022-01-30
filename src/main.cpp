@@ -108,16 +108,16 @@ void onConnectionEstablished()
     client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
   });
 
-  client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
-  client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
-  client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
-
   server.begin();
   server.setNoDelay(true);
   Serial.print("Now listening to tcp://");
   Serial.print(CLIENT_NAME);
   Serial.print(":");
   Serial.println(LISTEN_PORT);
+
+  client.publish(BASIC_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
+  client.publish(BASIC_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
+  client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
 }
 
 void pixelclientUpdateClients()
