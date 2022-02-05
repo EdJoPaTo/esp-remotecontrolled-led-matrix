@@ -244,35 +244,59 @@ void loop()
         uint8_t kind = client.read();
         if (kind == 1) // Fill
         {
-          uint8_t red = client.read();
-          uint8_t green = client.read();
-          uint8_t blue = client.read();
+          const size_t buffer_size = 3;
+          static uint8_t buffer[buffer_size];
+          auto size = client.readBytes(buffer, buffer_size);
+          bytes += 1 + size;
+          if (size != buffer_size) {
+            errors += 1;
+            continue;
+          }
           commands += 1;
-          bytes += 4;
+
+          auto red = buffer[0];
+          auto green = buffer[1];
+          auto blue = buffer[2];
           matrix_fill(red, green, blue);
         }
         else if (kind == 2) // Pixel
         {
-          uint8_t x = client.read();
-          uint8_t y = client.read();
-          uint8_t red = client.read();
-          uint8_t green = client.read();
-          uint8_t blue = client.read();
+          const size_t buffer_size = 5;
+          static uint8_t buffer[buffer_size];
+          auto size = client.readBytes(buffer, buffer_size);
+          bytes += 1 + size;
+          if (size != buffer_size) {
+            errors += 1;
+            continue;
+          }
           commands += 1;
-          bytes += 6;
+
+          auto x = buffer[0];
+          auto y = buffer[1];
+          auto red = buffer[2];
+          auto green = buffer[3];
+          auto blue = buffer[4];
           matrix_pixel(x, y, red, green, blue);
         }
         else if (kind == 3) // Rectangle
         {
-          uint8_t x_start = client.read();
-          uint8_t y_start = client.read();
-          uint8_t width = client.read();
-          uint8_t height = client.read();
-          uint8_t red = client.read();
-          uint8_t green = client.read();
-          uint8_t blue = client.read();
+          const size_t buffer_size = 7;
+          static uint8_t buffer[buffer_size];
+          auto size = client.readBytes(buffer, buffer_size);
+          bytes += 1 + size;
+          if (size != buffer_size) {
+            errors += 1;
+            continue;
+          }
           commands += 1;
-          bytes += 8;
+
+          auto x_start = buffer[0];
+          auto y_start = buffer[1];
+          auto width = buffer[2];
+          auto height = buffer[3];
+          auto red = buffer[4];
+          auto green = buffer[5];
+          auto blue = buffer[6];
           for (auto x = x_start; x < x_start + width; x++)
           {
             for (auto y = y_start; y < y_start + height; y++)
