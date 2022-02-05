@@ -42,8 +42,9 @@ EspMQTTClient client(
 WiFiServer server(LISTEN_PORT);
 std::vector<WiFiClient> clients;
 
-MQTTKalmanPublish mkCommandsPerSecond(client, BASE_TOPIC_STATUS "commands-per-second", false, 12 * 1 /* every 1 min */, 10);
-MQTTKalmanPublish mkKilobytesPerSecond(client, BASE_TOPIC_STATUS "kilobytes-per-second", false, 12 * 1 /* every 1 min */, 10);
+MQTTKalmanPublish mkCommandsPerSecond(client, BASE_TOPIC_STATUS "commands-per-second", false, 30 /* every 30 sec */, 10);
+MQTTKalmanPublish mkErrorsPerSecond(client, BASE_TOPIC_STATUS "errors-per-second", false, 30 /* every 30 sec */, 2);
+MQTTKalmanPublish mkKilobytesPerSecond(client, BASE_TOPIC_STATUS "kilobytes-per-second", false, 30 /* every 30 sec */, 2);
 MQTTKalmanPublish mkRssi(client, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
 
 boolean on = true;
@@ -51,6 +52,7 @@ uint8_t mqttBri = 2;
 
 uint32_t commands = 0;
 uint32_t bytes = 0;
+uint32_t errors = 0;
 size_t lastPublishedClientAmount = 0;
 
 void testMatrix()
@@ -131,10 +133,7 @@ void onConnectionEstablished()
 
   server.begin();
   server.setNoDelay(true);
-  Serial.print("Now listening to tcp://");
-  Serial.print(CLIENT_NAME);
-  Serial.print(":");
-  Serial.println(LISTEN_PORT);
+  Serial.printf("Now listening to tcp://" CLIENT_NAME ":%d\n", LISTEN_PORT);
 
   client.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   client.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
@@ -153,8 +152,7 @@ void pixelclientUpdateClients()
       clients.erase(clients.begin() + i - 1);
 
 #ifdef PRINT_TO_SERIAL
-      Serial.print("Client left. Remaining: ");
-      Serial.println(clients.size());
+      Serial.printf("Client left. Remaining: %d\n", clients.size());
 #endif
     }
   }
@@ -199,26 +197,26 @@ void loop()
 
     if (now >= nextCommandsUpdate)
     {
-      nextCommandsUpdate = now + 5000;
-      auto commands_per_second = commands / 5.0f;
-      commands = 0;
-      float avgCps = mkCommandsPerSecond.addMeasurement(commands_per_second);
+      nextCommandsUpdate = now + 1000;
+      float avgCps = mkCommandsPerSecond.addMeasurement(commands);
 #ifdef PRINT_TO_SERIAL
-      Serial.print("Commands per Second:  ");
-      Serial.print(String(commands_per_second).c_str());
-      Serial.print("   Average: ");
-      Serial.println(String(avgCps).c_str());
+      Serial.printf("Commands  per Second: %8d    Average: %10.2f\n", commands, avgCps);
 #endif
 
-      auto kB_per_second = bytes / (1024.0f * 5.0f);
-      bytes = 0;
-      float avgKbps = mkKilobytesPerSecond.addMeasurement(kB_per_second);
+      float avgErrors = mkErrorsPerSecond.addMeasurement(errors);
 #ifdef PRINT_TO_SERIAL
-      Serial.print("Kilobytes per Second:  ");
-      Serial.print(String(kB_per_second).c_str());
-      Serial.print("   Average: ");
-      Serial.println(String(avgKbps).c_str());
+      Serial.printf("Errors    per Second: %8d    Average: %10.2f\n", errors, avgErrors);
 #endif
+
+      auto kB = bytes / 1024.0f;
+      float avgKbps = mkKilobytesPerSecond.addMeasurement(kB);
+#ifdef PRINT_TO_SERIAL
+      Serial.printf("Kilobytes per Second: %10.1f  Average: %10.2f\n", kB, avgKbps);
+#endif
+
+      bytes = 0;
+      commands = 0;
+      errors = 0;
     }
 
     if (now >= nextMeasure)
@@ -227,10 +225,7 @@ void loop()
       long rssi = WiFi.RSSI();
       float avgRssi = mkRssi.addMeasurement(rssi);
 #ifdef PRINT_TO_SERIAL
-      Serial.print("RSSI        in dBm:     ");
-      Serial.print(String(rssi).c_str());
-      Serial.print("   Average: ");
-      Serial.println(String(avgRssi).c_str());
+      Serial.printf("RSSI          in dBm: %8ld    Average: %10.2f\n", rssi, avgRssi);
 #endif
     }
   }
@@ -285,6 +280,11 @@ void loop()
               matrix_pixel(x, y, red, green, blue);
             }
           }
+        }
+        else
+        {
+          bytes += 1;
+          errors += 1;
         }
       }
     }
