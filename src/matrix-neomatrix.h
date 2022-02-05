@@ -26,13 +26,13 @@ FastLED_NeoMatrix matrix = FastLED_NeoMatrix(leds, TOTAL_WIDTH, TOTAL_HEIGHT,
 void matrix_setup(uint8_t brightness)
 {
     FastLED.addLeds<NEOPIXEL, PIN_MATRIX>(leds, TOTAL_PIXELS);
+    FastLED.setBrightness(brightness);
     matrix.begin();
-    matrix.setBrightness(brightness);
 }
 
 void matrix_brightness(uint8_t brightness)
 {
-    matrix.setBrightness(brightness);
+    FastLED.setBrightness(brightness);
 }
 
 void matrix_update()
@@ -42,10 +42,14 @@ void matrix_update()
 
 void matrix_fill(uint8_t red, uint8_t green, uint8_t blue)
 {
-    matrix.fillScreen(CRGB(red, green, blue));
+    for (uint16_t i = 0; i < TOTAL_WIDTH * TOTAL_HEIGHT; i++)
+    {
+        leds[i] = CRGB(red, green, blue);
+    }
 }
 
 void matrix_pixel(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue)
 {
-    matrix.drawPixel(x, y, CRGB(red, green, blue));
+    auto i = matrix.XY(x, y);
+    leds[i] = CRGB(red, green, blue);
 }
