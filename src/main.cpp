@@ -68,6 +68,14 @@ void testMatrix() {
   matrix_fill(0, 0, 255);
   matrix_update();
   delay(250);
+
+  Serial.println("Pixel: top left, top right and bottom left (bottom right is missing)");
+  matrix_fill(0, 0, 0);
+  matrix_pixel(1, 1, 255, 255, 255);
+  matrix_pixel(TOTAL_WIDTH - 2, 1, 255, 255, 255);
+  matrix_pixel(1, TOTAL_HEIGHT - 2, 255, 255, 255);
+  matrix_update();
+  delay(1000);
 }
 
 void setup()
