@@ -53,7 +53,8 @@ uint32_t commands = 0;
 uint32_t bytes = 0;
 size_t lastPublishedClientAmount = 0;
 
-void testMatrix() {
+void testMatrix()
+{
   Serial.println("Fill screen: RED");
   matrix_fill(255, 0, 0);
   matrix_update();
@@ -69,11 +70,21 @@ void testMatrix() {
   matrix_update();
   delay(250);
 
-  Serial.println("Pixel: top left, top right and bottom left (bottom right is missing)");
+  Serial.println("Pixel: top right and bottom left, top left shows an arrow pointing up");
   matrix_fill(0, 0, 0);
-  matrix_pixel(1, 1, 255, 255, 255);
   matrix_pixel(TOTAL_WIDTH - 2, 1, 255, 255, 255);
   matrix_pixel(1, TOTAL_HEIGHT - 2, 255, 255, 255);
+
+  matrix_pixel(3, 1, 255, 255, 255);
+  matrix_pixel(3, 2, 255, 255, 255);
+  matrix_pixel(3, 3, 255, 255, 255);
+  matrix_pixel(3, 4, 255, 255, 255);
+  matrix_pixel(3, 5, 255, 255, 255);
+  matrix_pixel(2, 2, 255, 255, 255);
+  matrix_pixel(4, 2, 255, 255, 255);
+  matrix_pixel(1, 3, 255, 255, 255);
+  matrix_pixel(5, 3, 255, 255, 255);
+
   matrix_update();
   delay(1000);
 }
