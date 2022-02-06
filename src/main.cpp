@@ -241,22 +241,26 @@ void loop()
     {
       if (client.available())
       {
+        const size_t BUFFER_COLOR_SIZE = 3;
+        static uint8_t buffer_color[BUFFER_COLOR_SIZE];
+        const size_t BUFFER_RECT_SIZE = 4;
+        static uint8_t buffer_rect[BUFFER_RECT_SIZE];
+
         uint8_t kind = client.read();
         if (kind == 1) // Fill
         {
-          const size_t buffer_size = 3;
-          static uint8_t buffer[buffer_size];
-          auto size = client.readBytes(buffer, buffer_size);
+          auto size = client.readBytes(buffer_color, BUFFER_COLOR_SIZE);
           bytes += 1 + size;
-          if (size != buffer_size) {
+          if (size != BUFFER_COLOR_SIZE)
+          {
             errors += 1;
             continue;
           }
           commands += 1;
 
-          auto red = buffer[0];
-          auto green = buffer[1];
-          auto blue = buffer[2];
+          auto red = buffer_color[0];
+          auto green = buffer_color[1];
+          auto blue = buffer_color[2];
           matrix_fill(red, green, blue);
         }
         else if (kind == 2) // Pixel
@@ -265,7 +269,8 @@ void loop()
           static uint8_t buffer[buffer_size];
           auto size = client.readBytes(buffer, buffer_size);
           bytes += 1 + size;
-          if (size != buffer_size) {
+          if (size != buffer_size)
+          {
             errors += 1;
             continue;
           }
@@ -278,30 +283,65 @@ void loop()
           auto blue = buffer[4];
           matrix_pixel(x, y, red, green, blue);
         }
-        else if (kind == 3) // Rectangle
+        else if (kind == 3 || kind == 4) // Rectangle Solid / Contiguous
         {
-          const size_t buffer_size = 7;
-          static uint8_t buffer[buffer_size];
-          auto size = client.readBytes(buffer, buffer_size);
-          bytes += 1 + size;
-          if (size != buffer_size) {
+          auto rect_size = client.readBytes(buffer_rect, BUFFER_RECT_SIZE);
+          bytes += 1 + rect_size;
+          if (rect_size != BUFFER_RECT_SIZE)
+          {
             errors += 1;
             continue;
           }
-          commands += 1;
 
-          auto x_start = buffer[0];
-          auto y_start = buffer[1];
-          auto width = buffer[2];
-          auto height = buffer[3];
-          auto red = buffer[4];
-          auto green = buffer[5];
-          auto blue = buffer[6];
-          for (auto x = x_start; x < x_start + width; x++)
+          auto x_start = buffer_rect[0];
+          auto y_start = buffer_rect[1];
+          auto width = buffer_rect[2];
+          auto height = buffer_rect[3];
+
+          if (kind == 3) // Solid
           {
+            auto size = client.readBytes(buffer_color, BUFFER_COLOR_SIZE);
+            bytes += size;
+            if (size != BUFFER_COLOR_SIZE)
+            {
+              errors += 1;
+              continue;
+            }
+            commands += 1;
+
+            auto red = buffer_color[0];
+            auto green = buffer_color[1];
+            auto blue = buffer_color[2];
+            for (auto x = x_start; x < x_start + width; x++)
+            {
+              for (auto y = y_start; y < y_start + height; y++)
+              {
+                matrix_pixel(x, y, red, green, blue);
+              }
+            }
+          }
+          else // Contiguous
+          {
+            size_t buffer_size = width * height * 3;
+            uint8_t buffer[buffer_size];
+            auto size = client.readBytes(buffer, buffer_size);
+            bytes += size;
+            if (size != buffer_size)
+            {
+              errors += 1;
+              continue;
+            }
+            commands += 1;
+            size_t index = 0;
             for (auto y = y_start; y < y_start + height; y++)
             {
-              matrix_pixel(x, y, red, green, blue);
+              for (auto x = x_start; x < x_start + width; x++)
+              {
+                auto red = buffer[index++];
+                auto green = buffer[index++];
+                auto blue = buffer[index++];
+                matrix_pixel(x, y, red, green, blue);
+              }
             }
           }
         }

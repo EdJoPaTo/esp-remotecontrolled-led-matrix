@@ -26,8 +26,17 @@ fn pixel(x: u8, y: u8, red: u8, green: u8, blue: u8) {
 }
 
 /// Set rectangular area to the given color
-fn pixel(x: u8, y: u8, width: u8, height: u8, red: u8, green: u8, blue: u8) {
+fn rectangular(x: u8, y: u8, width: u8, height: u8, red: u8, green: u8, blue: u8) {
     client.send([3, x, y, width, height, red, green, blue]);
+}
+
+/// Set rectangular area to the given colors
+///
+/// The area begins in the top left at x/y and moves first on the x axis, then on the y axis.
+/// The colors are given in R G B order.
+fn contiguous(x: u8, y: u8, width: u8, height: u8, colors: &[u8]) {
+    client.send([4, x, y, width, height]);
+    client.send(colors);
 }
 ```
 
