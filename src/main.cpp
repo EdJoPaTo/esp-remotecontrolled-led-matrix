@@ -161,6 +161,7 @@ void pixelclientUpdateClients()
   {
     auto client = server.available();
     client.setNoDelay(true);
+    client.write(1); // Protocol version (breaking changes increase this number)
     client.write(TOTAL_WIDTH);
     client.write(TOTAL_HEIGHT);
     client.flush();

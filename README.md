@@ -4,7 +4,7 @@ Tested with a Neopixel LED Matrix on ESP8266 and [this ESP32 I2S Shield](https:/
 
 ## Protocol
 
-When connecting you get 2 bytes (8 bit unsigned): width and height.
+When connecting you get 3 bytes (8 bit unsigned): protocol version, width and height.
 Nothing is sent afterwards.
 
 Now you can send your commands.
