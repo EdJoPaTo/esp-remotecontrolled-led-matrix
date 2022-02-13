@@ -20,8 +20,8 @@ CRGB leds[TOTAL_PIXELS];
 //   NEO_MATRIX_PROGRESSIVE, NEO_MATRIX_ZIGZAG: all rows/columns proceed
 //     in the same order, or alternate lines reverse direction; pick one.
 FastLED_NeoMatrix matrix = FastLED_NeoMatrix(leds, TOTAL_WIDTH, TOTAL_HEIGHT,
-  NEO_MATRIX_TOP     + NEO_MATRIX_RIGHT +
-  NEO_MATRIX_ROWS    + NEO_MATRIX_ZIGZAG);
+  NEO_MATRIX_BOTTOM     + NEO_MATRIX_RIGHT +
+  NEO_MATRIX_COLUMNS    + NEO_MATRIX_ZIGZAG);
 
 void matrix_setup(uint8_t brightness)
 {
