@@ -184,50 +184,55 @@ void loop()
 {
   client.loop();
   digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
-  pixelclientUpdateClients();
+  if (!client.isWifiConnected())
+  {
+    return;
+  }
 
   auto now = millis();
 
-  if (client.isConnected())
+  if (now >= nextCommandsUpdate)
   {
-    if (lastPublishedClientAmount != clients.size())
+    nextCommandsUpdate = now + 1000;
+    float avgCps = mkCommandsPerSecond.addMeasurement(commands);
+#ifdef PRINT_TO_SERIAL
+    Serial.printf("Commands  per Second: %8d    Average: %10.2f\n", commands, avgCps);
+#endif
+
+    float avgErrors = mkErrorsPerSecond.addMeasurement(errors);
+#ifdef PRINT_TO_SERIAL
+    Serial.printf("Errors    per Second: %8d    Average: %10.2f\n", errors, avgErrors);
+#endif
+
+    auto kB = bytes / 1024.0f;
+    float avgKbps = mkKilobytesPerSecond.addMeasurement(kB);
+#ifdef PRINT_TO_SERIAL
+    Serial.printf("Kilobytes per Second: %10.1f  Average: %10.2f\n", kB, avgKbps);
+#endif
+
+    bytes = 0;
+    commands = 0;
+    errors = 0;
+  }
+
+  if (now >= nextMeasure)
+  {
+    nextMeasure = now + 5000;
+    long rssi = WiFi.RSSI();
+    float avgRssi = mkRssi.addMeasurement(rssi);
+#ifdef PRINT_TO_SERIAL
+    Serial.printf("RSSI          in dBm: %8ld    Average: %10.2f\n", rssi, avgRssi);
+#endif
+  }
+
+  pixelclientUpdateClients();
+  if (lastPublishedClientAmount != clients.size())
+  {
+    auto next = clients.size();
+    bool success = client.publish(BASE_TOPIC_STATUS "clients", String(next), MQTT_RETAINED);
+    if (success)
     {
-      lastPublishedClientAmount = clients.size();
-      client.publish(BASE_TOPIC_STATUS "clients", String(lastPublishedClientAmount), MQTT_RETAINED);
-    }
-
-    if (now >= nextCommandsUpdate)
-    {
-      nextCommandsUpdate = now + 1000;
-      float avgCps = mkCommandsPerSecond.addMeasurement(commands);
-#ifdef PRINT_TO_SERIAL
-      Serial.printf("Commands  per Second: %8d    Average: %10.2f\n", commands, avgCps);
-#endif
-
-      float avgErrors = mkErrorsPerSecond.addMeasurement(errors);
-#ifdef PRINT_TO_SERIAL
-      Serial.printf("Errors    per Second: %8d    Average: %10.2f\n", errors, avgErrors);
-#endif
-
-      auto kB = bytes / 1024.0f;
-      float avgKbps = mkKilobytesPerSecond.addMeasurement(kB);
-#ifdef PRINT_TO_SERIAL
-      Serial.printf("Kilobytes per Second: %10.1f  Average: %10.2f\n", kB, avgKbps);
-#endif
-
-      bytes = 0;
-      commands = 0;
-      errors = 0;
-    }
-
-    if (now >= nextMeasure)
-    {
-      nextMeasure = now + 5000;
-      long rssi = WiFi.RSSI();
-      float avgRssi = mkRssi.addMeasurement(rssi);
-#ifdef PRINT_TO_SERIAL
-      Serial.printf("RSSI          in dBm: %8ld    Average: %10.2f\n", rssi, avgRssi);
-#endif
+      lastPublishedClientAmount = next;
     }
   }
 
