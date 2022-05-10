@@ -3,8 +3,8 @@
 #include <MqttKalmanPublish.h>
 #include <vector>
 
-#ifdef I2SMATRIX
-#include "matrix-i2s.h"
+#ifdef HUB75MATRIX
+#include "matrix-hub75.h"
 #elif NEOMATRIX
 #include "matrix-neomatrix.h"
 #else
