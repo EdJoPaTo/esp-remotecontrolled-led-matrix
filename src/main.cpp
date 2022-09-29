@@ -15,7 +15,7 @@
 const uint16_t LISTEN_PORT = 1337;
 const bool MQTT_RETAINED = false;
 
-EspMQTTClient client(
+EspMQTTClient mqttClient(
     WIFI_SSID,
     WIFI_PASSWORD,
     MQTT_SERVER,
@@ -41,13 +41,13 @@ EspMQTTClient client(
 
 const uint8_t PROTOCOL_VERSION = 1; // breaking changes increase this number
 
-WiFiServer server(LISTEN_PORT);
-std::vector<WiFiClient> clients;
+WiFiServer pixelServer(LISTEN_PORT);
+std::vector<WiFiClient> pixelClients;
 
-MQTTKalmanPublish mkCommandsPerSecond(client, BASE_TOPIC_STATUS "commands-per-second", false, 30 /* every 30 sec */, 10);
-MQTTKalmanPublish mkErrorsPerSecond(client, BASE_TOPIC_STATUS "errors-per-second", false, 30 /* every 30 sec */, 2);
-MQTTKalmanPublish mkKilobytesPerSecond(client, BASE_TOPIC_STATUS "kilobytes-per-second", false, 30 /* every 30 sec */, 2);
-MQTTKalmanPublish mkRssi(client, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
+MQTTKalmanPublish mkCommandsPerSecond(mqttClient, BASE_TOPIC_STATUS "commands-per-second", false, 30 /* every 30 sec */, 10);
+MQTTKalmanPublish mkErrorsPerSecond(mqttClient, BASE_TOPIC_STATUS "errors-per-second", false, 30 /* every 30 sec */, 2);
+MQTTKalmanPublish mkKilobytesPerSecond(mqttClient, BASE_TOPIC_STATUS "kilobytes-per-second", false, 30 /* every 30 sec */, 2);
+MQTTKalmanPublish mkRssi(mqttClient, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
 
 boolean on = true;
 uint8_t mqttBri = 2;
@@ -102,11 +102,11 @@ void setup()
   matrix_setup(mqttBri << BRIGHTNESS_SCALE);
 
 #ifdef PRINT_TO_SERIAL
-  client.enableDebuggingMessages();
+  mqttClient.enableDebuggingMessages();
 #endif
-  client.enableHTTPWebUpdater();
-  client.enableOTA();
-  client.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
+  mqttClient.enableHTTPWebUpdater();
+  mqttClient.enableOTA();
+  mqttClient.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 
   // well, hope we are OK, let's draw some colors first :)
   testMatrix();
@@ -119,72 +119,71 @@ void setup()
 
 void onConnectionEstablished()
 {
-  client.subscribe(BASE_TOPIC_SET "bri", [](const String &payload) {
+  mqttClient.subscribe(BASE_TOPIC_SET "bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     mqttBri = max(1, min(255 >> BRIGHTNESS_SCALE, value));
     matrix_brightness((mqttBri << BRIGHTNESS_SCALE) * on);
-    client.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
+    mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   });
 
-  client.subscribe(BASE_TOPIC_SET "on", [](const String &payload) {
+  mqttClient.subscribe(BASE_TOPIC_SET "on", [](const String &payload) {
     boolean value = payload != "0";
     on = value;
     matrix_brightness((mqttBri << BRIGHTNESS_SCALE) * on);
-    client.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
+    mqttClient.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
   });
 
-  server.begin();
-  server.setNoDelay(true);
+  pixelServer.begin();
+  pixelServer.setNoDelay(true);
   Serial.printf("Now listening to tcp://" CLIENT_NAME ":%d\n", LISTEN_PORT);
 
-  client.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
-  client.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
-  client.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
-  client.publish(BASE_TOPIC "protocol-version", String(PROTOCOL_VERSION), MQTT_RETAINED);
-  client.publish(BASE_TOPIC "connected", "2", MQTT_RETAINED);
+  mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
+  mqttClient.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
+  mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
+  mqttClient.publish(BASE_TOPIC "protocol-version", String(PROTOCOL_VERSION), MQTT_RETAINED);
+  mqttClient.publish(BASE_TOPIC "connected", "2", MQTT_RETAINED);
 }
 
-void pixelclientUpdateClients()
+void updateWifiClientVector()
 {
-  for (auto i = clients.size(); i > 0; i--)
+  for (auto i = pixelClients.size(); i > 0; i--)
   {
-    auto client = clients[i - 1];
-
-    if (!client.connected())
+    auto pixelClient = pixelClients[i - 1];
+    if (!pixelClient.connected())
     {
-      clients.erase(clients.begin() + i - 1);
+      pixelClients.erase(pixelClients.begin() + i - 1);
 
 #ifdef PRINT_TO_SERIAL
-      Serial.printf("Client left. Remaining: %d\n", clients.size());
+      Serial.printf("Client left. Remaining: %d\n", pixelClients.size());
 #endif
     }
   }
 
-  while (server.hasClient())
+  while (pixelServer.hasClient())
   {
-    auto client = server.available();
-    client.setNoDelay(true);
-    client.write(PROTOCOL_VERSION);
-    client.write(TOTAL_WIDTH);
-    client.write(TOTAL_HEIGHT);
-    client.flush();
+    auto pixelClient = pixelServer.available();
+    pixelClient.setNoDelay(true);
+    pixelClient.write(PROTOCOL_VERSION);
+    pixelClient.write(TOTAL_WIDTH);
+    pixelClient.write(TOTAL_HEIGHT);
+    pixelClient.flush();
 
 #ifdef PRINT_TO_SERIAL
     Serial.print("Client new: ");
-    Serial.print(client.remoteIP().toString());
+    Serial.print(pixelClient.remoteIP().toString());
     Serial.print(":");
-    Serial.println(client.remotePort());
+    Serial.println(pixelClient.remotePort());
 #endif
 
-    clients.push_back(client);
+    pixelClients.push_back(pixelClient);
   }
 }
 
 void loop()
 {
-  client.loop();
-  digitalWrite(LED_BUILTIN, client.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
-  if (!client.isWifiConnected())
+  mqttClient.loop();
+  digitalWrite(LED_BUILTIN, mqttClient.isConnected() ? LED_BUILTIN_OFF : LED_BUILTIN_ON);
+  if (!mqttClient.isWifiConnected())
   {
     return;
   }
@@ -227,11 +226,11 @@ void loop()
 #endif
   }
 
-  pixelclientUpdateClients();
-  if (lastPublishedClientAmount != clients.size())
+  updateWifiClientVector();
+  if (lastPublishedClientAmount != pixelClients.size())
   {
-    auto next = clients.size();
-    bool success = client.publish(BASE_TOPIC_STATUS "clients", String(next), MQTT_RETAINED);
+    auto next = pixelClients.size();
+    bool success = mqttClient.publish(BASE_TOPIC_STATUS "clients", String(next), MQTT_RETAINED);
     if (success)
     {
       lastPublishedClientAmount = next;
@@ -245,19 +244,19 @@ void loop()
   auto until = millis() + 25;
   while (millis() < until)
   {
-    for (auto client : clients)
+    for (auto pixelClient : pixelClients)
     {
-      if (client.available())
+      if (pixelClient.available())
       {
         const size_t BUFFER_COLOR_SIZE = 3;
         static uint8_t buffer_color[BUFFER_COLOR_SIZE];
         const size_t BUFFER_RECT_SIZE = 4;
         static uint8_t buffer_rect[BUFFER_RECT_SIZE];
 
-        uint8_t kind = client.read();
+        uint8_t kind = pixelClient.read();
         if (kind == 1) // Fill
         {
-          auto size = client.readBytes(buffer_color, BUFFER_COLOR_SIZE);
+          auto size = pixelClient.readBytes(buffer_color, BUFFER_COLOR_SIZE);
           bytes += 1 + size;
           if (size != BUFFER_COLOR_SIZE)
           {
@@ -275,7 +274,7 @@ void loop()
         {
           const size_t buffer_size = 5;
           static uint8_t buffer[buffer_size];
-          auto size = client.readBytes(buffer, buffer_size);
+          auto size = pixelClient.readBytes(buffer, buffer_size);
           bytes += 1 + size;
           if (size != buffer_size)
           {
@@ -293,7 +292,7 @@ void loop()
         }
         else if (kind == 3 || kind == 4) // Rectangle Solid / Contiguous
         {
-          auto rect_size = client.readBytes(buffer_rect, BUFFER_RECT_SIZE);
+          auto rect_size = pixelClient.readBytes(buffer_rect, BUFFER_RECT_SIZE);
           bytes += 1 + rect_size;
           if (rect_size != BUFFER_RECT_SIZE)
           {
@@ -308,7 +307,7 @@ void loop()
 
           if (kind == 3) // Solid
           {
-            auto size = client.readBytes(buffer_color, BUFFER_COLOR_SIZE);
+            auto size = pixelClient.readBytes(buffer_color, BUFFER_COLOR_SIZE);
             bytes += size;
             if (size != BUFFER_COLOR_SIZE)
             {
@@ -332,7 +331,7 @@ void loop()
           {
             size_t buffer_size = width * height * 3;
             uint8_t buffer[buffer_size];
-            auto size = client.readBytes(buffer, buffer_size);
+            auto size = pixelClient.readBytes(buffer, buffer_size);
             bytes += size;
             if (size != buffer_size)
             {
