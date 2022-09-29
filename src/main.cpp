@@ -180,9 +180,6 @@ void pixelclientUpdateClients()
   }
 }
 
-unsigned long nextCommandsUpdate = 0;
-unsigned long nextMeasure = 0;
-
 void loop()
 {
   client.loop();
@@ -194,9 +191,10 @@ void loop()
 
   auto now = millis();
 
-  if (now >= nextCommandsUpdate)
+  static unsigned long nextMqttStats = 0;
+  if (now >= nextMqttStats)
   {
-    nextCommandsUpdate = now + 1000;
+    nextMqttStats = now + 1000;
     float avgCps = mkCommandsPerSecond.addMeasurement(commands);
 #ifdef PRINT_TO_SERIAL
     Serial.printf("Commands  per Second: %8d    Average: %10.2f\n", commands, avgCps);
@@ -218,6 +216,7 @@ void loop()
     errors = 0;
   }
 
+  static unsigned long nextMeasure = 0;
   if (now >= nextMeasure)
   {
     nextMeasure = now + 5000;
