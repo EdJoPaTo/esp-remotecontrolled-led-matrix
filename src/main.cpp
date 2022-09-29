@@ -39,6 +39,8 @@ EspMQTTClient client(
   #define LED_BUILTIN_OFF LOW
 #endif
 
+const uint8_t PROTOCOL_VERSION = 1; // breaking changes increase this number
+
 WiFiServer server(LISTEN_PORT);
 std::vector<WiFiClient> clients;
 
@@ -138,6 +140,7 @@ void onConnectionEstablished()
   client.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
   client.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
   client.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
+  client.publish(BASE_TOPIC "protocol-version", String(PROTOCOL_VERSION), MQTT_RETAINED);
   client.publish(BASE_TOPIC "connected", "2", MQTT_RETAINED);
 }
 
@@ -161,7 +164,7 @@ void pixelclientUpdateClients()
   {
     auto client = server.available();
     client.setNoDelay(true);
-    client.write(1); // Protocol version (breaking changes increase this number)
+    client.write(PROTOCOL_VERSION);
     client.write(TOTAL_WIDTH);
     client.write(TOTAL_HEIGHT);
     client.flush();
