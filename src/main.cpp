@@ -260,8 +260,10 @@ void loop()
           bytes += 1 + size;
           if (size != BUFFER_COLOR_SIZE)
           {
+            mqttClient.publish(BASE_TOPIC "debug", "fill wrong size", false);
+            pixelClient.stop();
             errors += 1;
-            continue;
+            return;
           }
           commands += 1;
 
@@ -278,8 +280,10 @@ void loop()
           bytes += 1 + size;
           if (size != buffer_size)
           {
+            mqttClient.publish(BASE_TOPIC "debug", "pixel wrong size", false);
+            pixelClient.stop();
             errors += 1;
-            continue;
+            return;
           }
           commands += 1;
 
@@ -296,8 +300,10 @@ void loop()
           bytes += 1 + rect_size;
           if (rect_size != BUFFER_RECT_SIZE)
           {
+            mqttClient.publish(BASE_TOPIC "debug", "rect area wrong size", false);
+            pixelClient.stop();
             errors += 1;
-            continue;
+            return;
           }
 
           auto x_start = buffer_rect[0];
@@ -311,8 +317,10 @@ void loop()
             bytes += size;
             if (size != BUFFER_COLOR_SIZE)
             {
+              mqttClient.publish(BASE_TOPIC "debug", "rect solid wrong size", false);
+              pixelClient.stop();
               errors += 1;
-              continue;
+              return;
             }
             commands += 1;
 
@@ -335,8 +343,10 @@ void loop()
             bytes += size;
             if (size != buffer_size)
             {
+              mqttClient.publish(BASE_TOPIC "debug", "rect contiguous wrong size", false);
+              pixelClient.stop();
               errors += 1;
-              continue;
+              return;
             }
             commands += 1;
             size_t index = 0;
@@ -354,6 +364,7 @@ void loop()
         }
         else
         {
+          mqttClient.publish(BASE_TOPIC "debug", "unknown message kind", false);
           bytes += 1;
           errors += 1;
         }
