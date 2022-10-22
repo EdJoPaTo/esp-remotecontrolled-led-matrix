@@ -6,9 +6,6 @@ const uint16_t TOTAL_HEIGHT = 8;
 
 const int PIN_MATRIX = 13; // D7
 
-// mqttBri << BRIGHTNESS_SCALE -> full scale seems to be available
-#define BRIGHTNESS_SCALE 0
-
 const uint16_t TOTAL_PIXELS = TOTAL_WIDTH * TOTAL_HEIGHT;
 CRGB leds[TOTAL_PIXELS];
 
