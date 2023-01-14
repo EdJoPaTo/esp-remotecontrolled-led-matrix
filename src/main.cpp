@@ -99,6 +99,7 @@ void setup()
 #endif
 	mqttClient.enableHTTPWebUpdater();
 	mqttClient.enableOTA();
+	mqttClient.enableDrasticResetOnConnectionFailures();
 	mqttClient.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 
 	// well, hope we are OK, let's draw some colors first :)
