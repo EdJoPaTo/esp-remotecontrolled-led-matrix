@@ -42,8 +42,8 @@ MQTTKalmanPublish mkErrorsPerSecond(mqttClient, BASE_TOPIC_STATUS "errors-per-se
 MQTTKalmanPublish mkKilobytesPerSecond(mqttClient, BASE_TOPIC_STATUS "kilobytes-per-second", false, 30 /* every 30 sec */, 2);
 MQTTKalmanPublish mkRssi(mqttClient, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
 
-boolean on = true;
-uint8_t mqttBri = 2;
+bool on = false;
+uint8_t mqttBri = 0;
 
 uint32_t commands = 0;
 uint32_t bytes = 0;
@@ -103,7 +103,7 @@ void setup()
 	mqttClient.enableLastWillMessage(BASE_TOPIC "connected", "0", MQTT_RETAINED);
 
 	// well, hope we are OK, let's draw some colors first :)
-	testMatrix();
+	// testMatrix();
 
 	matrix_fill(0, 0, 0);
 	matrix_update();
@@ -131,8 +131,6 @@ void onConnectionEstablished()
 	pixelServer.setNoDelay(true);
 	Serial.printf("Now listening to tcp://" CLIENT_NAME ":%d\n", LISTEN_PORT);
 
-	mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
-	mqttClient.publish(BASE_TOPIC_STATUS "on", String(on), MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "protocol-version", String(PROTOCOL_VERSION), MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "connected", "2", MQTT_RETAINED);
