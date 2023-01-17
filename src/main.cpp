@@ -43,7 +43,7 @@ MQTTKalmanPublish mkKilobytesPerSecond(mqttClient, BASE_TOPIC_STATUS "kilobytes-
 MQTTKalmanPublish mkRssi(mqttClient, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12 * 5 /* every 5 min */, 10);
 
 bool on = false;
-uint8_t mqttBri = 0;
+float mqttBri = 0.0f;
 
 uint32_t commands = 0;
 uint32_t bytes = 0;
@@ -114,10 +114,11 @@ void setup()
 void onConnectionEstablished()
 {
 	mqttClient.subscribe(BASE_TOPIC_SET "bri", [](const String &payload) {
-		int value = strtol(payload.c_str(), 0, 10);
-		mqttBri = max(1, min(255, value));
+		auto value = strtof(payload.c_str(), 0) / 100.0f;
+		if (!isfinite(value)) return;
+		mqttBri = max(1.0f / 255, min(1.0f, value));
 		matrix_brightness(mqttBri * on);
-		mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri), MQTT_RETAINED);
+		mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri * 100.0f), MQTT_RETAINED);
 	});
 
 	mqttClient.subscribe(BASE_TOPIC_SET "on", [](const String &payload) {

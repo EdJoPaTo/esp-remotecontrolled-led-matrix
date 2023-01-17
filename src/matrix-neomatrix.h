@@ -1,52 +1,66 @@
-#include <FastLED.h>
-#include <FastLED_NeoMatrix.h>
+#include <NeoPixelBus.h>
 
 const uint16_t TOTAL_WIDTH = 32;
 const uint16_t TOTAL_HEIGHT = 8;
 
-const int PIN_MATRIX = 13; // D7
-
 const uint16_t TOTAL_PIXELS = TOTAL_WIDTH * TOTAL_HEIGHT;
-CRGB leds[TOTAL_PIXELS];
 
-//   NEO_MATRIX_TOP, NEO_MATRIX_BOTTOM, NEO_MATRIX_LEFT, NEO_MATRIX_RIGHT:
-//     Position of the FIRST LED in the matrix; pick two, e.g.
-//     NEO_MATRIX_TOP + NEO_MATRIX_LEFT for the top-left corner.
-//   NEO_MATRIX_ROWS, NEO_MATRIX_COLUMNS: LEDs are arranged in horizontal
-//     rows or in vertical columns, respectively; pick one or the other.
-//   NEO_MATRIX_PROGRESSIVE, NEO_MATRIX_ZIGZAG: all rows/columns proceed
-//     in the same order, or alternate lines reverse direction; pick one.
-FastLED_NeoMatrix matrix = FastLED_NeoMatrix(leds, TOTAL_WIDTH, TOTAL_HEIGHT,
-	NEO_MATRIX_BOTTOM + NEO_MATRIX_RIGHT +
-	NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG);
+// Efficient connection via DMA on pin RDX0 GPIO3 RX
+// See <https://github.com/Makuna/NeoPixelBus/wiki/FAQ-%231>
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(TOTAL_PIXELS);
 
-void matrix_setup(uint8_t brightness)
+// bitbanging (Fallback)
+// const int PIN_MATRIX = 13; // D7
+// NeoPixelBus<NeoGrbFeature, NeoEsp8266BitBang800KbpsMethod> strip(TOTAL_PIXELS, PIN_MATRIX);
+
+NeoTopology<ColumnMajorAlternating180Layout> topo(TOTAL_WIDTH, TOTAL_HEIGHT);
+
+struct ColorBufferColor
 {
-	FastLED.addLeds<NEOPIXEL, PIN_MATRIX>(leds, TOTAL_PIXELS);
-	FastLED.setBrightness(brightness);
-	matrix.begin();
+	float r;
+	float g;
+	float b;
+};
+struct ColorBufferColor colorBuffer[TOTAL_PIXELS];
+
+float globalBrightness = 0.0;
+
+void matrix_setup(float brightness)
+{
+	strip.Begin();
+	globalBrightness = brightness;
 }
 
-void matrix_brightness(uint8_t brightness)
+void matrix_brightness(float brightness)
 {
-	FastLED.setBrightness(brightness);
+	globalBrightness = brightness;
 }
 
 void matrix_update()
 {
-	matrix.show();
+	for (uint16_t i = 0; i < TOTAL_PIXELS; i++)
+	{
+		auto r = colorBuffer[i].r * globalBrightness;
+		auto g = colorBuffer[i].g * globalBrightness;
+		auto b = colorBuffer[i].b * globalBrightness;
+		strip.SetPixelColor(i, RgbColor(r, g, b));
+	}
+
+	strip.Show();
 }
 
 void matrix_fill(uint8_t red, uint8_t green, uint8_t blue)
 {
-	for (uint16_t i = 0; i < TOTAL_WIDTH * TOTAL_HEIGHT; i++)
+	struct ColorBufferColor color = {(float)red, (float)green, (float)blue};
+	for (uint16_t i = 0; i < TOTAL_PIXELS; i++)
 	{
-		leds[i] = CRGB(red, green, blue);
+		colorBuffer[i] = color;
 	}
 }
 
 void matrix_pixel(uint16_t x, uint16_t y, uint8_t red, uint8_t green, uint8_t blue)
 {
-	auto i = matrix.XY(x, y);
-	leds[i] = CRGB(red, green, blue);
+	auto i = topo.Map(x, y);
+	struct ColorBufferColor color = {(float)red, (float)green, (float)blue};
+	colorBuffer[i] = color;
 }
