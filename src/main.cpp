@@ -6,7 +6,7 @@
 #include "matrix-neomatrix.h"
 
 const uint16_t LISTEN_PORT = 1337;
-const bool MQTT_RETAINED = false;
+const bool MQTT_RETAINED = true;
 
 EspMQTTClient mqttClient(
 	WIFI_SSID,
