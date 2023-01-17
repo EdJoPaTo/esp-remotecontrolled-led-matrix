@@ -154,7 +154,8 @@ void updateWifiClientVector()
 
 	while (pixelServer.hasClient())
 	{
-		auto pixelClient = pixelServer.available();
+		auto pixelClient = pixelServer.accept();
+		pixelClient.keepAlive();
 		pixelClient.setNoDelay(true);
 		pixelClient.write(PROTOCOL_VERSION);
 		pixelClient.write(TOTAL_WIDTH);
