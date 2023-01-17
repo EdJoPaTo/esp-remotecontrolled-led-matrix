@@ -5,6 +5,7 @@
 
 #include "matrix-neomatrix.h"
 
+#define CLIENT_NAME "espMatrix-location"
 const uint16_t LISTEN_PORT = 1337;
 const bool MQTT_RETAINED = true;
 
