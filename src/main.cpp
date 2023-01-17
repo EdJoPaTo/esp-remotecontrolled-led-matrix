@@ -5,7 +5,6 @@
 
 #include "matrix-neomatrix.h"
 
-#define CLIENT_NAME "espMatrix-location"
 const uint16_t LISTEN_PORT = 1337;
 const bool MQTT_RETAINED = false;
 
@@ -132,6 +131,7 @@ void onConnectionEstablished()
 	pixelServer.setNoDelay(true);
 	Serial.printf("Now listening to tcp://" CLIENT_NAME ":%d\n", LISTEN_PORT);
 
+	mqttClient.publish(BASE_TOPIC "git-remote", GIT_REMOTE, MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "git-version", GIT_VERSION, MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "protocol-version", String(PROTOCOL_VERSION), MQTT_RETAINED);
 	mqttClient.publish(BASE_TOPIC "connected", "2", MQTT_RETAINED);
