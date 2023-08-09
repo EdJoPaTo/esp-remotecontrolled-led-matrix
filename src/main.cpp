@@ -43,6 +43,7 @@ MQTTKalmanPublish mkRssi(mqttClient, BASE_TOPIC_STATUS "rssi", MQTT_RETAINED, 12
 
 bool on = false;
 float mqttBri = 0.0f;
+const float brightnessFactor = 100.0f; // Set to 255.0f when the display is used indoors (not as bright)
 
 uint32_t commands = 0;
 uint32_t bytes = 0;
@@ -113,11 +114,11 @@ void setup()
 void onConnectionEstablished()
 {
 	mqttClient.subscribe(BASE_TOPIC_SET "bri", [](const String &payload) {
-		auto value = strtof(payload.c_str(), 0) / 100.0f;
+		auto value = strtof(payload.c_str(), 0) / brightnessFactor;
 		if (!isfinite(value)) return;
 		mqttBri = max(1.0f / 255, min(1.0f, value));
 		matrix_brightness(mqttBri * on);
-		mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri * 100.0f), MQTT_RETAINED);
+		mqttClient.publish(BASE_TOPIC_STATUS "bri", String(mqttBri * brightnessFactor), MQTT_RETAINED);
 	});
 
 	mqttClient.subscribe(BASE_TOPIC_SET "on", [](const String &payload) {
